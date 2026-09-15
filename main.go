@@ -6,11 +6,13 @@ import (
 )
 
 func main() {
-	http.HandleFunc("/", rootHandler)
+	mux := http.NewServeMux() // under the hood default mux will be used.
+
+	mux.HandleFunc("/", rootHandler)
 	fmt.Println("server is running on 4000")
-	
-	// port listen 
-	err := http.ListenAndServe(":4000", nil)
+	mux.HandleFunc("/health", healthHandler)
+	// port listen
+	err := http.ListenAndServe(":4000", mux)
 	if err != nil {
 		fmt.Println("server error ", err)
 	}
@@ -19,4 +21,9 @@ func main() {
 
 func rootHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "welcome to go server!")
+}
+
+func healthHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintln(w, "server is up and healthy")
+
 }
