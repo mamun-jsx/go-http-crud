@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"slices"
 	"strconv"
 )
 
@@ -167,10 +168,16 @@ func deleteUserHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid user id", http.StatusBadRequest)
 		return
 	}
-	
+
 	for idx, user := range users {
 		if user.Id == id {
-			users = append(users[:idx], users[idx+1:]...)
+			// ! menual feature
+			// users = append(users[:idx], users[idx+1:]...)
+			// w.WriteHeader(http.StatusNoContent)
+			// return
+
+			// ! built in feature
+			users = slices.Delete(users, idx, idx+1)
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
