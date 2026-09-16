@@ -48,15 +48,30 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func createUserHandler(w http.ResponseWriter, r *http.Request) {
-
-	fmt.Fprintln(w, "user created")
-
+	var newUser User
+	err := json.NewDecoder(r.Body).Decode(&newUser) //decode the user from json to struct
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Println(w, "Invalid request body")
+		return
+	}
+	fmt.Println("user created", newUser)
+	newUser.Id = len(users) + 1 // create id
+	users = append(users, newUser)
+	//* now send to client
+	w.Header().Set("Content-Type", "Application/json") // set content type otherwise it will send default text type content
+	w.WriteHeader(http.StatusCreated)                  // send code to client side
+	json.NewEncoder(w).Encode(users)                   // send json response to client
 }
 
 // ? Get all User
 func getUserHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "Application/json")
-	users, _ := json.Marshal(users)
+	// users, _ := json.Marshal(users)
 	// ! send data to client side
-	w.Write(users)
+	// w.Write(users)
+	// json encoding
+	encoder := json.NewEncoder(w)
+	encoder.Encode(users)
+	// encoding is more memory efficient
 }
