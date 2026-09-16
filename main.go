@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 )
@@ -31,6 +32,7 @@ func main() {
 	mux.HandleFunc("POST /create-user", createUserHandler)
 	mux.HandleFunc("GET /users", getUserHandler)
 	mux.HandleFunc("GET /users/{id}", getSingleUserHandler)
+	mux.HandleFunc("PUT /user/{id}", updateUserHandler)
 
 	// port listen
 	err := http.ListenAndServe(":4000", mux)
@@ -94,6 +96,50 @@ func getSingleUserHandler(w http.ResponseWriter, r *http.Request) {
 			// if id is matched then send it to client side
 			w.Header().Set("Content-Type", "Application/json")
 			json.NewEncoder(w).Encode(user)
+			return
 		}
 	}
+	// send response status if user is not found
+	w.WriteHeader(http.StatusNotFound)
+}
+
+// update user by Id
+func updateUserHandler(w http.ResponseWriter, r *http.Request) {
+	idParam := r.PathValue("id")
+	id, err := strconv.Atoi(idParam)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintln(w, "invalid user id")
+		return
+	}
+
+	var updateUser User
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+
+	if err := decoder.Decode(&updateUser); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "invalid request body: " + err.Error()})
+		return
+	}
+	if err := decoder.Decode(&struct{}{}); err != io.EOF {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "request body must contain exactly one JSON object"})
+		return
+	}
+
+	for idx, user := range users {
+		if user.Id == id {
+			updateUser.Id = id
+			users[idx] = updateUser
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(updateUser)
+			return
+		}
+	}
+
+	w.WriteHeader(http.StatusNotFound)
+	fmt.Fprintln(w, "user not found")
 }
