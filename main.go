@@ -7,10 +7,11 @@ import (
 )
 
 type User struct {
-	Id    int
-	Name  string
-	Age   int
-	Email string
+	// struct tag
+	Id    int    `json:"id"`
+	Name  string `json:"name"`
+	Age   int    `json:"age"`
+	Email string `json:"email"`
 }
 
 var users = []User{
@@ -52,6 +53,7 @@ func createUserHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
+// ? Get all User
 func getUserHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "Application/json")
 	users, _ := json.Marshal(users)
