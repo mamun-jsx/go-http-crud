@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 )
 
 type User struct {
@@ -29,6 +30,7 @@ func main() {
 	mux.HandleFunc("/health", healthHandler)
 	mux.HandleFunc("POST /create-user", createUserHandler)
 	mux.HandleFunc("GET /users", getUserHandler)
+	mux.HandleFunc("GET /users/{id}", getSingleUserHandler)
 
 	// port listen
 	err := http.ListenAndServe(":4000", mux)
@@ -74,4 +76,24 @@ func getUserHandler(w http.ResponseWriter, r *http.Request) {
 	encoder := json.NewEncoder(w)
 	encoder.Encode(users)
 	// encoding is more memory efficient
+}
+
+// ? get user by id
+
+func getSingleUserHandler(w http.ResponseWriter, r *http.Request) {
+
+	idParam := r.PathValue("id") // r.PathValue will provide the id from URL
+	id, err := strconv.Atoi(idParam)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Println("Invalid user id")
+		return
+	}
+	for _, user := range users {
+		if user.Id == id {
+			// if id is matched then send it to client side
+			w.Header().Set("Content-Type", "Application/json")
+			json.NewEncoder(w).Encode(user)
+		}
+	}
 }
