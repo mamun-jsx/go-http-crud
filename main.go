@@ -33,6 +33,7 @@ func main() {
 	mux.HandleFunc("GET /users", getUserHandler)
 	mux.HandleFunc("GET /users/{id}", getSingleUserHandler)
 	mux.HandleFunc("PUT /user/{id}", updateUserHandler)
+	mux.HandleFunc("DELETE /user/{id}", deleteUserHandler)
 
 	// port listen
 	err := http.ListenAndServe(":4000", mux)
@@ -51,6 +52,7 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
+// create a user
 func createUserHandler(w http.ResponseWriter, r *http.Request) {
 	var newUser User
 	err := json.NewDecoder(r.Body).Decode(&newUser) //decode the user from json to struct
@@ -104,6 +106,13 @@ func getSingleUserHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // update user by Id
+// Command to test: curl -X PUT http://localhost:4000/user/1 -H "Content-Type: application/json" -d '{"id": 1, "name": "Updated Name", "age": 20, "email": "updated@example.com"}'
+// Description:
+// 1. Extracts the 'id' from the URL path.
+// 2. Decodes the JSON request body into a User struct, ensuring no unknown fields exist.
+// 3. Iterates through the in-memory 'users' slice to find a matching user ID.
+// 4. If found, updates the user at that index and returns the updated user as JSON.
+// 5. If not found, returns a 404 Not Found status.
 func updateUserHandler(w http.ResponseWriter, r *http.Request) {
 	idParam := r.PathValue("id")
 	id, err := strconv.Atoi(idParam)
@@ -142,4 +151,29 @@ func updateUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusNotFound)
 	fmt.Fprintln(w, "user not found")
+}
+
+// ? delete user by id
+// Command to test: curl -X DELETE http://localhost:4000/user/1 -i
+// Description:
+// 1. Extracts the 'id' from the URL path.
+// 2. Iterates through the in-memory 'users' slice to find the user with the matching ID.
+// 3. If found, removes the user from the slice using slice slicing (users[:idx] and users[idx+1:]).
+// 4. Returns a 204 No Content status on success (no response body).
+// 5. If not found, returns a 404 Not Found error.
+func deleteUserHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		http.Error(w, "invalid user id", http.StatusBadRequest)
+		return
+	}
+	
+	for idx, user := range users {
+		if user.Id == id {
+			users = append(users[:idx], users[idx+1:]...)
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+	}
+	http.Error(w, "user not found", http.StatusNotFound)
 }
